@@ -108,19 +108,20 @@ bump "Checking Whisper large-v3-turbo model (~1.5 GB, one-time)"
 MODEL_DIR="$HOME/.local/share/whisper-models"
 MODEL="$MODEL_DIR/ggml-large-v3-turbo.bin"
 # SHA256 of ggml-large-v3-turbo.bin from official whisper.cpp HuggingFace repo.
-# IMPLEMENTOR: before committing, fetch the actual digest and paste here, e.g.:
-#   curl -sL https://huggingface.co/ggerganov/whisper.cpp/raw/main/ggml-large-v3-turbo.bin \
-#     | shasum -a 256
-# If left blank, the script downloads but cannot verify integrity (warns).
-EXPECTED_SHA=""
+# Verified at release time via:
+#   curl -sL https://huggingface.co/ggerganov/whisper.cpp/raw/main/ggml-large-v3-turbo.bin
+#   (LFS pointer contains the oid sha256)
+# If the upstream model is ever re-published with a different digest, this MUST
+# be updated; the script intentionally fails closed on mismatch.
+EXPECTED_SHA="1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69"
 
 verify_model() {
   if [ ! -f "$MODEL" ]; then
     return 2
   fi
   if [ -z "$EXPECTED_SHA" ]; then
-    ok "Model present ($(du -h "$MODEL" | cut -f1)) (SHA256 verification skipped - no expected digest)"
-    return 0
+    fail "Model integrity check disabled (EXPECTED_SHA empty). Refusing to use unverified model."
+    return 1
   fi
   actual="$(shasum -a 256 "$MODEL" | awk '{print $1}')"
   if [ "$actual" = "$EXPECTED_SHA" ]; then
@@ -150,21 +151,42 @@ else
   fi
 fi
 
-# --- 8. pixel-art skill (W7 — supply-chain note + version) ---
+# --- 8. pixel-art skill (W7 — supply-chain: pin to commit + interactive opt-in) ---
 bump "Checking pixel-art skill (third-party, recommended)"
 PIXEL_SKILL_DIR="$HOME/.claude/skills/pixel-art"
+# Commit SHA of omer-metin/skills-for-antigravity verified at release time.
+PIXEL_PIN_SHA="e8dcf4e8737921a10088bd5c9eb65e81f74c051f"
 if [ -d "$PIXEL_SKILL_DIR" ]; then
   ok "pixel-art skill present at $PIXEL_SKILL_DIR"
 else
   echo
-  echo "  HEADS UP: this installs a third-party skill (omer-metin/skills-for-antigravity)"
-  echo "  via npx -- it runs arbitrary JavaScript with your user permissions."
-  echo "  We recommend the skill (the sprite quality drops noticeably without it)"
-  echo "  but it is not maintained by this project."
-  echo "  Source: https://github.com/omer-metin/skills-for-antigravity"
+  echo "  HEADS UP: about to install a THIRD-PARTY skill from GitHub"
+  echo "    Repo:    https://github.com/omer-metin/skills-for-antigravity"
+  echo "    Skill:   pixel-art"
+  echo "    Pinned:  $PIXEL_PIN_SHA"
   echo
-  echo "  Installing..."
-  npx -y skills add omer-metin/skills-for-antigravity@pixel-art -g -y
+  echo "  Installation runs arbitrary JavaScript via npx with your user permissions."
+  echo "  We recommend this skill (sprite quality drops noticeably without it) but it is"
+  echo "  NOT maintained by this project. You should read the source before consenting."
+  echo
+  printf "  Type 'yes' to install, or 'skip' to continue without it: "
+  read -r answer < /dev/tty
+  case "$answer" in
+    yes|YES|y|Y)
+      todo "Installing pixel-art skill pinned to $PIXEL_PIN_SHA..."
+      npx -y skills add \
+        "https://github.com/omer-metin/skills-for-antigravity/tree/${PIXEL_PIN_SHA}" \
+        --skill pixel-art -g -y \
+        || { fail "pixel-art install failed; you can retry manually."; }
+      ;;
+    skip|SKIP|s|S|n|N|no|NO)
+      todo "Skipped pixel-art install. Sprite quality will be lower."
+      todo "You can install later with the same command above."
+      ;;
+    *)
+      fail "Unrecognized response '$answer' — treating as skip."
+      ;;
+  esac
 fi
 
 # --- 9. Done ---
