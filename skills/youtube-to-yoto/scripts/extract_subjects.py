@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 """
-Split a manifest CSV into N batches for parallel SubAgent subject extraction.
+Split a manifest CSV into N batches for parallel SubAgent subject + title extraction.
 
-Each batch is a JSON array of {vid, title, transcript_file} entries — feed
+Each batch is a JSON array of {vid, title, original, transcript_file} entries — feed
 each batch to one Sonnet SubAgent with the prompt template in
-references/workflow.md "Subject extraction".
+references/subagent-prompts.md "Phase 3 — subject + clean title extraction".
+
+Each SubAgent returns BOTH:
+  - subject: one English noun for the 16×16 sprite
+  - title:   the cleaned native-language story title (strip channel/season prefix + hashtags)
+
+This dual-extraction was added in 1.0.1 to fix the chapter-title bug — previously
+yoto_upload.py fell back to the raw YouTube title (full of「卡通【...】 #幼兒」 noise)
+when no manifest CSV provided a 故事名稱 column. See references/pitfalls.md
+"Never use raw YouTube title verbatim as chapter title".
 
 Usage:
     python3 extract_subjects.py <manifest.csv> <transcript_dir> <out_dir> [N=20]
@@ -16,6 +25,7 @@ import json, glob
 m = {}
 for f in sorted(glob.glob('<output_dir>/batch_*.json')):
     m.update(json.load(open(f)))
+# m is now {vid: {subject, title}}; yoto_upload.py reads this format directly.
 json.dump(m, open('subjects.json','w'), ensure_ascii=False, indent=2)
 "
 """

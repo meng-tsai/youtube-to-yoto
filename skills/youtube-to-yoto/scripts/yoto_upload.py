@@ -114,7 +114,20 @@ def main():
     mp3_dir       = Path(args.mp3)
     cache_path    = Path(args.cache)
 
-    subjects = json.loads(subjects_path.read_text())
+    # Load subjects.json. Two supported shapes:
+    #   1) legacy flat:   {vid: "subject"}            — title falls back to CSV/playlist-json
+    #   2) since 1.0.1:   {vid: {subject, title}}     — per-episode clean title overrides everything
+    # The new shape is produced by the Phase 3 SubAgent (see references/subagent-prompts.md).
+    raw_subjects   = json.loads(subjects_path.read_text())
+    subjects       = {}   # vid -> subject string (English noun for sprite)
+    subj_titles    = {}   # vid -> clean story title (from new dual-extraction format)
+    for vid, val in raw_subjects.items():
+        if isinstance(val, dict):
+            subjects[vid] = val.get("subject", "")
+            if val.get("title"):
+                subj_titles[vid] = val["title"]
+        else:
+            subjects[vid] = val
     titles, vids = {}, []
 
     csv_path = Path(args.csv) if args.csv else None
@@ -144,6 +157,22 @@ def main():
         print(f"Loaded {len(vids)} vids from playlist JSON {pj_path}")
     else:
         sys.exit(f"ERROR: no manifest. Pass --csv or --playlist-json, or place _playlist.json in {mp3_dir}")
+
+    # Per-episode clean titles from subjects.json (Phase 3 dual-extraction) override
+    # whatever the manifest gave us — manifests carry raw YouTube titles with
+    # channel/season prefix + hashtag noise that should NOT reach the Yoto Player.
+    overridden = 0
+    for vid in vids:
+        if vid in subj_titles:
+            titles[vid] = subj_titles[vid][:80]
+            overridden += 1
+    if overridden:
+        print(f"Overrode {overridden}/{len(vids)} chapter titles with cleaned story names from subjects.json")
+    elif vids and not any(vid in subj_titles for vid in vids):
+        print("WARNING: subjects.json has no per-episode `title` field — chapter titles will be raw YouTube titles.")
+        print("         Re-run Phase 3 SubAgents with the updated prompt in references/subagent-prompts.md")
+        print("         to extract clean story titles (introduced in 1.0.1).")
+
     if args.limit:
         vids = vids[:args.limit]
     print(f"Processing {len(vids)} vids")

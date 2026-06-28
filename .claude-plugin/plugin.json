@@ -1,6 +1,6 @@
 {
   "name": "youtube-to-yoto",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Turn any YouTube playlist into a Yoto MYO playlist with 16x16 pixel-art icons on the Player's LED matrix.",
   "author": {
     "name": "Meng-Huan Tsai",

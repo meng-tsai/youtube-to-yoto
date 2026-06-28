@@ -170,6 +170,14 @@ Instruct the subject-extraction LLM: "Transcripts may contain Whisper transcript
 
 ## Subject extraction
 
+### Never use raw YouTube title verbatim as the chapter title
+
+YouTube titles for episodic content are almost always SEO-padded — channel/season prefix (「卡通【可愛巧虎島】」, `Season 12:`), trailing hashtags (`#幼兒 #卡通 #動畫 #親子 #育兒`), bracketed quality tags (`[HD]`, `(Full Episode)`, `【中文版】`). Passing these straight through to `chapter.title` lands them on the Yoto Player UI — a parent scrolling 100 chapters in the Yoto app sees identical-prefix noise instead of real story names.
+
+**Fix:** the Phase 3 SubAgent now extracts BOTH `subject` (English noun for sprite) AND `title` (cleaned native-language story name) per episode. `yoto_upload.py` 1.0.1+ reads the title from the rich `subjects.json` format `{vid: {subject, title}}` and overrides whatever the manifest carried. If `subjects.json` is still in the legacy `{vid: "subject"}` flat format, the script prints a warning and falls back to manifest titles. See `references/subagent-prompts.md` for the title-cleaning rules and `SKILL.md` Phase 3 for the dual-extraction step.
+
+Symptom of regression: chapter titles on the Player look like `第12季【可愛巧虎島】神祕的祕密寶盒 #幼兒 #卡通` instead of `神祕的祕密寶盒`.
+
 ### Title alone isn't enough for abstract titles
 
 「爸爸的朋友」 (Dad's Friend) → must read the transcript to learn the friend is a rhinoceros beetle. Without transcript context, the LLM picks "two tea cups" (generic friendship symbol) — wrong subject, wrong icon, kid doesn't recognize the episode. **Always pass title + transcript together** in the prompt.

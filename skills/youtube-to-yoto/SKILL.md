@@ -73,11 +73,15 @@ scripts/transcribe_all.sh <mp3_dir> <transcript_dir>
 
 Uses local `whisper-cli` with Metal acceleration on Apple Silicon. ~15× realtime for the turbo model. 3 minutes is enough — episodic kids' content states the subject up front. Language auto-detected.
 
-### Phase 3 — Pick one drawable subject per episode
+### Phase 3 — Pick one drawable subject + a clean story title per episode
 
-Each episode reduces to ONE concrete English noun naming a physical object a 2-year-old recognises. Examples: `rhinoceros beetle`, `birthday cake`, `school bus`. Not verbs, not abstractions, not character names.
+Each episode reduces to TWO things:
+1. **Subject** — ONE concrete English noun naming a physical object a 2-year-old recognises. Examples: `rhinoceros beetle`, `birthday cake`, `school bus`. Not verbs, not abstractions, not character names.
+2. **Clean story title** — the native-language story name **stripped of YouTube SEO noise** (channel/season prefix like 「卡通【可愛巧虎島】」 / `Season 12:`, trailing hashtags `#幼兒 #卡通 #動畫`, bracketed metadata). The Yoto Player and app show this title to the user — passing raw YouTube titles produces noisy junk.
 
-Dispatch ~20 Sonnet SubAgents in parallel — each gets a batch of ~14 episodes and writes `{vid: subject}` JSON. See `references/subagent-prompts.md` for the exact prompt template. Merge outputs into `subjects.json`, then dedupe to `unique_subjects.json`.
+Dispatch ~20 Sonnet SubAgents in parallel — each gets a batch of ~14 episodes and writes `{vid: {"subject": "...", "title": "..."}}` JSON. See `references/subagent-prompts.md` for the exact prompt template (includes title-cleaning rules and worked examples). Merge outputs into `subjects.json`, then build `unique_subjects.json` from the `subject` fields (dedupe).
+
+**Backward compatibility:** `yoto_upload.py` also accepts the legacy flat format `{vid: "subject"}` (older runs) — but you'll get raw YouTube titles on the Player and a warning printed. Re-run Phase 3 with the updated prompt to fix it.
 
 ### Phase 4 — Generate 16×16 pixel-art sprites
 
