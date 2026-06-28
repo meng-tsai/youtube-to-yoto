@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "youtube-to-yoto",
+  "version": "1.0.0",
+  "description": "Marketplace entry for the youtube-to-yoto plugin.",
+  "plugins": [
+    {
+      "name": "youtube-to-yoto",
+      "description": "YouTube playlist -> Yoto MYO card with auto-generated 16x16 pixel-art icons.",
+      "source": "./",
+      "category": "creative-tools"
+    }
+  ]
+}

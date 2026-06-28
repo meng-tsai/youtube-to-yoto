@@ -1,0 +1,16 @@
+{
+  "name": "youtube-to-yoto",
+  "version": "1.0.0",
+  "description": "Turn any YouTube playlist into a Yoto MYO playlist with 16x16 pixel-art icons on the Player's LED matrix.",
+  "author": {
+    "name": "Meng-Huan Tsai",
+    "url": "https://github.com/meng-tsai"
+  },
+  "homepage": "https://github.com/meng-tsai/youtube-to-yoto",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/meng-tsai/youtube-to-yoto.git"
+  },
+  "license": "MIT",
+  "keywords": ["yoto", "yoto-player", "youtube", "kids", "audio", "pixel-art", "myo"]
+}
